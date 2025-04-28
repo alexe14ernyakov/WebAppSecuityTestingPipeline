@@ -1,6 +1,8 @@
 import argparse
 import utils
 
+from tools.whatweb import WhatWebScanner
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description='Automated web-application security testing pipleline', 
@@ -44,6 +46,12 @@ def main():
         print(f"[*] Starting scanning target on {target['url']}")
     else:
         print("[!] Error: could not connect to the target")
+
+    scanners: dict = {
+        "whatweb": WhatWebScanner()
+    }
+
+    scanners["whatweb"].scan(target["url"], 1)
 
 
 if __name__ == "__main__":
