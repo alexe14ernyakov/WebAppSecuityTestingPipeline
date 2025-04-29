@@ -4,7 +4,7 @@ import os
 class WhatWebScanner(Tool):
     def __init__(self):
         super().__init__(
-            image="whatweb-own",
+            image="whatweb",
             dockerfile_path=os.path.join(os.path.dirname(__file__), "../../Dockerfiles/whatweb"),
             results_dir=os.path.join(os.path.dirname(__file__), "../../results/whatweb")
         )

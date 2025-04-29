@@ -1,10 +1,10 @@
 from .tool import Tool
 import os
 
-class Nikto(Tool):
+class NiktoScanner(Tool):
     def __init__(self):
         super().__init__(
-            image="nikto-own",
+            image="nikto",
             dockerfile_path=os.path.join(os.path.dirname(__file__), "../../Dockerfiles/nikto"),
             results_dir=os.path.join(os.path.dirname(__file__), "../../results/nikto")
         )
@@ -17,5 +17,9 @@ class Nikto(Tool):
             os.remove(results_file)
 
         self.run_container(
-            command=f"-h {target} -Format json -output /results/results.json"
+            command=(
+                f"-h {target} "
+                f"-Format json "
+                f"-output /results/results.json"
+            )
         )

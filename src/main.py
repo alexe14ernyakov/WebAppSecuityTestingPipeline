@@ -3,7 +3,8 @@ import utils
 import sys
 
 from tools.whatweb import WhatWebScanner
-from tools.nikto import Nikto
+from tools.nikto import NiktoScanner
+from tools.gobuster import GoBusterScanner
 
 
 def parse_args() -> argparse.Namespace:
@@ -63,11 +64,14 @@ def main():
 
     scanners: dict = {
         "whatweb": WhatWebScanner(),
-        "nikto": Nikto()
+        "nikto": NiktoScanner(),
+        "gobuster": GoBusterScanner()
     }
 
     scanners["whatweb"].scan(target["url"].replace('localhost', '127.0.0.1'), args.wwagr)
     scanners["nikto"].scan(target["url"].replace('localhost', '127.0.0.1'))
+    scanners["gobuster"].scan_subdomains(target["url"].replace('localhost', '127.0.0.1'), wordlist='/home/alex/Study/SRW/scanner/wordlists/mini-subdoms.txt')
+    scanners["gobuster"].scan_directories(target["url"].replace('localhost', '127.0.0.1'), wordlist='/home/alex/Study/SRW/scanner/wordlists/mini-dirs.txt')
 
 
 if __name__ == "__main__":

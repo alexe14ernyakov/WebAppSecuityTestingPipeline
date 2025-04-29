@@ -13,7 +13,7 @@ class Tool:
         self.results_path = os.path.abspath(os.path.normpath(results_dir))
         os.makedirs(self.results_path, exist_ok=True)
 
-    def build_image(self):
+    def build_image(self) -> None:
         try:
             _, logs = self.client.images.build(
                 path=self.dockerfile_path,
@@ -30,16 +30,23 @@ class Tool:
             print(f"[!] Unexpected error during building image {self.image}: {e}")
             sys.exit(1)
 
-    def ensure_image(self):
+    def ensure_image(self) -> None:
         try:
             self.client.images.get(self.image)
         except docker.errors.ImageNotFound:
             print(f"[*] Image {self.image} did not found locally. Start building it")
             self.build_image()
 
-    def run_container(self, command: list[str]):
+    def run_container(self, command: list[str], extra_volumes: dict = None) -> None:
         print(f"[*] Starting container {self.image}")
         try:
+            volumes = {
+                self.results_path: {'bind': '/results', 'mode': 'rw'}
+            }
+
+            if extra_volumes:
+                volumes.update(extra_volumes)
+
             _ = self.client.containers.run(
                 image=self.image,
                 command=command,
@@ -47,7 +54,7 @@ class Tool:
                 stdout=True,
                 stderr=True,
                 network_mode="host",
-                volumes={self.results_path: {'bind': '/results', 'mode': 'rw'}}
+                volumes=volumes
             )
 
             print(f"[+] Scan with {self.image} completed. Results saved to {self.results_path}")
