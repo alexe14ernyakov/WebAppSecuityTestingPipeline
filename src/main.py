@@ -1,7 +1,10 @@
 import argparse
 import utils
+import sys
 
 from tools.whatweb import WhatWebScanner
+from tools.nikto import Nikto
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -56,12 +59,15 @@ def main():
         print(f"[*] Starting scanning target on {target['url']}")
     else:
         print("[!] Error: could not connect to the target")
+        sys.exit(1)
 
     scanners: dict = {
-        "whatweb": WhatWebScanner()
+        "whatweb": WhatWebScanner(),
+        "nikto": Nikto()
     }
 
-    scanners["whatweb"].scan(target["url"], args.wwagr)
+    scanners["whatweb"].scan(target["url"].replace('localhost', '127.0.0.1'), args.wwagr)
+    scanners["nikto"].scan(target["url"].replace('localhost', '127.0.0.1'))
 
 
 if __name__ == "__main__":

@@ -46,6 +46,7 @@ class Tool:
                 remove=True,
                 stdout=True,
                 stderr=True,
+                network_mode="host",
                 volumes={self.results_path: {'bind': '/results', 'mode': 'rw'}}
             )
 
