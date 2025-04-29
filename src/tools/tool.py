@@ -10,7 +10,7 @@ class Tool:
         self.client = docker.from_env()
         self.image = image
         self.dockerfile_path = dockerfile_path
-        self.results_path = results_dir
+        self.results_path = os.path.abspath(os.path.normpath(results_dir))
         os.makedirs(self.results_path, exist_ok=True)
 
     def build_image(self):
@@ -40,7 +40,7 @@ class Tool:
     def run_container(self, command: list[str]):
         print(f"[*] Starting container {self.image}")
         try:
-            output = self.client.containers.run(
+            _ = self.client.containers.run(
                 image=self.image,
                 command=command,
                 remove=True,
@@ -49,7 +49,7 @@ class Tool:
                 volumes={self.results_path: {'bind': '/results', 'mode': 'rw'}}
             )
 
-            print(f"[+] Scan completed. Results saved to {self.results_path}")
+            print(f"[+] Scan with {self.image} completed. Results saved to {self.results_path}")
         except docker.errors.ContainerError as e:
             print(f"[!] Container {self.image} execution failed: {e}")
         except Exception as e:

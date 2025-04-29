@@ -33,6 +33,16 @@ def parse_args() -> argparse.Namespace:
         help='Use HTTPS in testing process',
         dest='tls'
     )
+    parser.add_argument(
+        '--whatweb-aggression',
+        help='''Aggression levels are:
+                1. Stealthy     Makes one HTTP request per target. Also follows redirects.
+                3. Aggressive   If a level 1 plugin is matched, additional requests will be made.
+                4. Heavy        Makes a lot of HTTP requests per target. Aggressive tests from''',
+        required=False,
+        dest='wwagr', type= int,
+        default=3
+    )
 
     return parser.parse_args()
 
@@ -51,7 +61,7 @@ def main():
         "whatweb": WhatWebScanner()
     }
 
-    scanners["whatweb"].scan(target["url"], 1)
+    scanners["whatweb"].scan(target["url"], args.wwagr)
 
 
 if __name__ == "__main__":
