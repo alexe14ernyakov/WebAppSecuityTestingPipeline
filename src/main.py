@@ -7,6 +7,7 @@ from tools.whatweb import WhatWebScanner
 from tools.nikto import NiktoScanner
 from tools.gobuster import GoBusterScanner
 from tools.zap import OwaspZapScanner
+from tools.sqlmap import SQLmapScanner
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -81,13 +82,14 @@ def main():
         "whatweb": WhatWebScanner(),
         "nikto": NiktoScanner(),
         "gobuster": GoBusterScanner(),
-        "zap": OwaspZapScanner()
+        "zap": OwaspZapScanner(),
+        "sqlmap": SQLmapScanner()
     }
 
     scanners["whatweb"].scan(target["url"].replace('localhost', '127.0.0.1'), args.wwagr)
-    #scanners["nikto"].scan(target["url"].replace('localhost', '127.0.0.1'))
+    scanners["nikto"].scan(target["url"].replace('localhost', '127.0.0.1'))
     scanners["gobuster"].scan_subdomains(target["host"].replace('localhost', '127.0.0.1'), args.subdomswordlist)
-    #scanners["gobuster"].scan_directories(target["url"].replace('localhost', '127.0.0.1'), args.dirswordlist)
+    scanners["gobuster"].scan_directories(target["url"].replace('localhost', '127.0.0.1'), args.dirswordlist)
 
     try:
         with open("../results/gobuster/subdomains_results.txt", "r") as f:
@@ -96,14 +98,16 @@ def main():
         if len(subdomains):
             for subdomain in subdomains:
                 scanners["zap"].scan(subdomain.strip())
+                scanners["sqlmap"].scan(subdomain.strip())
+
     except FileNotFoundError:
         print("[*] Subdomains results file not found. Scan only given target with OWASP ZAP.")
     finally:
         scanners["zap"].scan(target["url"].replace('localhost', '127.0.0.1'))
 
-        queried_uris: set = utils.find_queried_uris(f"../results/zap/{target["host"]}-results.json")
+        queried_uris: set = utils.find_queried_uris(f"../results/zap/{target['host'].replace('localhost', '127.0.0.1')}-results.json")
         for uri in queried_uris:
-            pass
+            scanners["sqlmap"].scan(uri.replace('localhost', '127.0.0.1'))
 
 if __name__ == "__main__":
     main()
