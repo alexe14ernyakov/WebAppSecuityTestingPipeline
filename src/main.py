@@ -8,6 +8,7 @@ from tools.nikto import NiktoScanner
 from tools.gobuster import GoBusterScanner
 from tools.zap import OwaspZapScanner
 from tools.sqlmap import SQLmapScanner
+from tools.tplmap import TplmapScanner
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -83,7 +84,8 @@ def main():
         "nikto": NiktoScanner(),
         "gobuster": GoBusterScanner(),
         "zap": OwaspZapScanner(),
-        "sqlmap": SQLmapScanner()
+        "sqlmap": SQLmapScanner(),
+        "tplmap": TplmapScanner()
     }
 
     scanners["whatweb"].scan(target["url"].replace('localhost', '127.0.0.1'), args.wwagr)
@@ -98,7 +100,6 @@ def main():
         if len(subdomains):
             for subdomain in subdomains:
                 scanners["zap"].scan(subdomain.strip())
-                scanners["sqlmap"].scan(subdomain.strip())
 
     except FileNotFoundError:
         print("[*] Subdomains results file not found. Scan only given target with OWASP ZAP.")
@@ -108,6 +109,7 @@ def main():
         queried_uris: set = utils.find_queried_uris(f"../results/zap/{target['host'].replace('localhost', '127.0.0.1')}-results.json")
         for uri in queried_uris:
             scanners["sqlmap"].scan(uri.replace('localhost', '127.0.0.1'))
+            scanners["tplmap"].scan(uri.replace('localhost', '127.0.0.1'))
 
 if __name__ == "__main__":
     main()

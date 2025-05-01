@@ -9,7 +9,7 @@ class SQLmapScanner(Tool):
             results_dir=os.path.join(os.path.dirname(__file__), "../../results/sqlmap")
         )
 
-    def scan(self, target: str):
+    def scan(self, uri: str):
         self.ensure_image()
 
         results_file = os.path.join(self.results_path, "results.json")
@@ -18,7 +18,7 @@ class SQLmapScanner(Tool):
 
         self.run_container(
             command=(
-                f"-u {target} "
+                f"-u {uri} "
                 f"--batch --level=3 "
                 f"--risk=2 --flush-session "
                 f"--output-format=json "
