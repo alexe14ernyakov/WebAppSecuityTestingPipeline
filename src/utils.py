@@ -1,6 +1,7 @@
 import re
 import sys
 import requests
+import json
 
 
 def normalize_target(address: str, port: int | None, tls: bool | None) -> dict:
@@ -54,3 +55,19 @@ def check_accessibility(url: str) -> bool:
         return True
     except requests.RequestException:
         return False
+    
+
+def find_queried_uris(zap_report: str) -> set:
+    with open(zap_report, encoding='utf-8') as f:
+        data = json.load(f)
+
+    uris = set()
+
+    for site in data.get("site", []):
+        for alert in site.get("alerts", []):
+            for instance in alert.get("instances", []):
+                uri = instance.get("uri", "")
+                if "?" in uri:
+                    uris.add(uri)
+
+    return sorted(uris)
