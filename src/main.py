@@ -2,6 +2,7 @@ import argparse
 import utils
 import sys
 import os
+import time
 
 from tools.whatweb import WhatWebScanner
 from tools.nikto import NiktoScanner
@@ -43,8 +44,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         '--whatweb-aggression',
         help='''Aggression levels are:
-                1. Stealthy     Makes one HTTP request per target. Also follows redirects.
-                3. Aggressive   If a level 1 plugin is matched, additional requests will be made.
+                1. Stealthy     Makes one HTTP request per target. Also follows redirects.\n
+                3. Aggressive   If a level 1 plugin is matched, additional requests will be made.\n
                 4. Heavy        Makes a lot of HTTP requests per target. Aggressive tests from''',
         required=False,
         dest='wwagr', type= int,
@@ -88,11 +89,50 @@ def main():
         "tplmap": TplmapScanner()
     }
 
+    '''================================================================================================================================
+    |||                                                WHATWEB SCANING                                                              |||
+    ================================================================================================================================'''
+    start: float = time.time()
     scanners["whatweb"].scan(target["url"].replace('localhost', '127.0.0.1'), args.wwagr)
-    scanners["nikto"].scan(target["url"].replace('localhost', '127.0.0.1'))
-    scanners["gobuster"].scan_subdomains(target["host"].replace('localhost', '127.0.0.1'), args.subdomswordlist)
-    scanners["gobuster"].scan_directories(target["url"].replace('localhost', '127.0.0.1'), args.dirswordlist)
+    print(f"[*] Process took {time.time() - start:.3f} seconds")
 
+
+    '''================================================================================================================================
+    |||                                                CMSSCAN SCANING                                                              |||
+    ================================================================================================================================'''
+    start: float = time.time()
+    pass
+    print(f"[*] Process took {time.time() - start:.3f} seconds")
+
+
+    '''================================================================================================================================
+    |||                                                NIKTO SCANING                                                                |||
+    ================================================================================================================================'''
+    start: float = time.time()
+    scanners["nikto"].scan(target["url"].replace('localhost', '127.0.0.1'))
+    print(f"[*] Process took {time.time() - start:.3f} seconds")
+
+
+    '''================================================================================================================================
+    |||                                          GOBUSTER SUBDOMAIN SEARCH                                                          |||
+    ================================================================================================================================'''
+    start: float = time.time()
+    scanners["gobuster"].scan_subdomains(target["host"].replace('localhost', '127.0.0.1'), args.subdomswordlist)
+    print(f"[*] Process took {time.time() - start:.3f} seconds")
+
+
+    '''================================================================================================================================
+    |||                                          GOBUSTER DIRECTORIES SEARCH                                                        |||
+    ================================================================================================================================'''
+    start: float = time.time()
+    scanners["gobuster"].scan_directories(target["url"].replace('localhost', '127.0.0.1'), args.dirswordlist)
+    print(f"[*] Process took {time.time() - start:.3f} seconds")
+
+
+    '''================================================================================================================================
+    |||                                           OWASP ZAP DAST + TPL/SQL MAP                                                      |||
+    ================================================================================================================================'''
+    start: float = time.time()
     try:
         with open("../results/gobuster/subdomains_results.txt", "r") as f:
             subdomains = f.readlines()
@@ -110,6 +150,7 @@ def main():
         for uri in queried_uris:
             scanners["sqlmap"].scan(uri.replace('localhost', '127.0.0.1'))
             scanners["tplmap"].scan(uri.replace('localhost', '127.0.0.1'))
+    print(f"[*] Process took {time.time() - start:.3f} seconds")
 
 if __name__ == "__main__":
     main()

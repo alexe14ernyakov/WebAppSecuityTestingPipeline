@@ -51,7 +51,7 @@ def normalize_target(address: str, port: int | None, tls: bool | None) -> dict:
 
 def check_accessibility(url: str) -> bool:
     try:
-        response = requests.get(url, timeout=10)
+        _ = requests.get(url, timeout=10)
         return True
     except requests.RequestException:
         return False
