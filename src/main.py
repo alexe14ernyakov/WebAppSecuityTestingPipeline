@@ -11,7 +11,7 @@ from tools.gobuster import GoBusterScanner
 from tools.zap import OwaspZapScanner
 from tools.sqlmap import SQLmapScanner
 from tools.tplmap import TplmapScanner
-from tools.tool import SslyzeScanner
+from tools.sslyze import SslyzeScanner
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
