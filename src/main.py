@@ -5,6 +5,7 @@ import os
 import time
 
 from tools.whatweb import WhatWebScanner
+from tools.cmsscan import CMSscanTool
 from tools.nikto import NiktoScanner
 from tools.gobuster import GoBusterScanner
 from tools.zap import OwaspZapScanner
@@ -82,6 +83,7 @@ def main():
 
     scanners: dict = {
         "whatweb": WhatWebScanner(),
+        "cmsscan": CMSscanTool(),
         "nikto": NiktoScanner(),
         "gobuster": GoBusterScanner(),
         "zap": OwaspZapScanner(),
@@ -100,9 +102,12 @@ def main():
     '''================================================================================================================================
     |||                                                CMSSCAN SCANING                                                              |||
     ================================================================================================================================'''
-    start: float = time.time()
-    pass
-    print(f"[*] Process took {time.time() - start:.3f} seconds")
+    if utils.check_cms_support(f"../results/whatweb/results.json"):
+        start: float = time.time()
+        scanners["cmsscan"].scan(target["url"].replace('localhost', '127.0.0.1'))
+        print(f"[*] Process took {time.time() - start:.3f} seconds")
+    else:
+        print("[*] CMSscan skipped. No supported CMS detected.")
 
 
     '''================================================================================================================================

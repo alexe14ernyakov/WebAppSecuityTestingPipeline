@@ -4,6 +4,18 @@ import requests
 import json
 
 
+SUPPORTED_CMS = [
+    "WordPress",
+    "Joomla",
+    "Drupal",
+    "Magento",
+    "vBulletin",
+    "OpenCart",
+    "phpBB",
+    "Typo3"
+]
+
+
 def normalize_target(address: str, port: int | None, tls: bool | None) -> dict:
     schema_pattern: re.Pattern = re.compile(r'^(http[s]?)://')
     match_schema: re.Match | None = schema_pattern.match(address)
@@ -54,6 +66,19 @@ def check_accessibility(url: str) -> bool:
         _ = requests.get(url, timeout=10)
         return True
     except requests.RequestException:
+        return False
+    
+
+def check_cms_support(whatweb_report: str) -> bool:
+    try:
+        with open(whatweb_report, "r", encoding="utf-8") as file:
+            content = file.read().lower()
+        for cms in SUPPORTED_CMS:
+            if cms.lower() in content:
+                return True
+        return False
+    except Exception as e:
+        print(f"[!] Error searching for CMS in WhatWeb report: {e}")
         return False
     
 
