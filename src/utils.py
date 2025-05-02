@@ -96,3 +96,7 @@ def find_queried_uris(zap_report: str) -> set:
                     uris.add(uri)
 
     return sorted(uris)
+
+
+def gerenate_report() -> None:
+    pass

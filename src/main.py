@@ -1,17 +1,19 @@
 import argparse
-import utils
-import sys
 import os
+import sys
 import time
 
-from tools.whatweb import WhatWebScanner
 from tools.cmsscan import CMSscanTool
-from tools.nikto import NiktoScanner
 from tools.gobuster import GoBusterScanner
-from tools.zap import OwaspZapScanner
+from tools.nikto import NiktoScanner
 from tools.sqlmap import SQLmapScanner
-from tools.tplmap import TplmapScanner
 from tools.sslyze import SslyzeScanner
+from tools.tplmap import TplmapScanner
+from tools.whatweb import WhatWebScanner
+from tools.zap import OwaspZapScanner
+
+import utils
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -175,8 +177,8 @@ def main():
     '''================================================================================================================================
     |||                                               GENERATING GENERAL REPORT                                                     |||
     ================================================================================================================================'''
+    utils.generate_report()
 
-    pass
 
 if __name__ == "__main__":
     main()
