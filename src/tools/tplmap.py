@@ -4,7 +4,7 @@ import os
 class TplmapScanner(Tool):
     def __init__(self):
         super().__init__(
-            image="sqlmap",
+            image="tplmap",
             dockerfile_path=os.path.join(os.path.dirname(__file__), "../../Dockerfiles/tplmap"),
             results_dir=os.path.join(os.path.dirname(__file__), "../../results/tplmap")
         )

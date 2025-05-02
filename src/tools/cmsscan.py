@@ -4,7 +4,7 @@ import os
 class CMSscanTool(Tool):
     def __init__(self):
         super().__init__(
-            image="whatweb",
+            image="cmsscan",
             dockerfile_path=os.path.join(os.path.dirname(__file__), "../../Dockerfiles/cmsscan"),
             results_dir=os.path.join(os.path.dirname(__file__), "../../results/cmsscan")
         )

@@ -11,6 +11,7 @@ from tools.gobuster import GoBusterScanner
 from tools.zap import OwaspZapScanner
 from tools.sqlmap import SQLmapScanner
 from tools.tplmap import TplmapScanner
+from tools.tool import SslyzeScanner
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -88,7 +89,8 @@ def main():
         "gobuster": GoBusterScanner(),
         "zap": OwaspZapScanner(),
         "sqlmap": SQLmapScanner(),
-        "tplmap": TplmapScanner()
+        "tplmap": TplmapScanner(),
+        "sslyze": SslyzeScanner()
     }
 
     '''================================================================================================================================
@@ -156,6 +158,25 @@ def main():
             scanners["sqlmap"].scan(uri.replace('localhost', '127.0.0.1'))
             scanners["tplmap"].scan(uri.replace('localhost', '127.0.0.1'))
     print(f"[*] Process took {time.time() - start:.3f} seconds")
+
+
+    '''================================================================================================================================
+    |||                                                    SSLYZE ANALYSIS                                                          |||
+    ================================================================================================================================'''
+    if target["scheme"] == "https":
+        start: float = time.time()
+        addr: str =f"{target['host'].replace('localhost', '127.0.0.1')}:{target['port']}"
+        scanners["sslyze"].scan(addr)
+        print(f"[*] Process took {time.time() - start:.3f} seconds")
+    else:
+        print("[*] Skipping sslyze scan. Target is not using HTTPS.")
+
+
+    '''================================================================================================================================
+    |||                                               GENERATING GENERAL REPORT                                                     |||
+    ================================================================================================================================'''
+
+    pass
 
 if __name__ == "__main__":
     main()
