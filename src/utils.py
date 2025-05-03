@@ -1,7 +1,9 @@
+import json
+import os
 import re
 import sys
+
 import requests
-import json
 
 
 SUPPORTED_CMS = [
@@ -98,5 +100,56 @@ def find_queried_uris(zap_report: str) -> set:
     return sorted(uris)
 
 
-def gerenate_report() -> None:
-    pass
+def generate_report() -> None:
+    print("[*] Generating general report for analized target")
+
+    base_dir = "../results"
+    report = {}
+
+    for root, _, files in os.walk(base_dir):
+        if root == base_dir:
+            continue
+
+        dir_name = os.path.basename(root)
+
+        if "results.json" in files:
+            try:
+                with open(os.path.join(root, "results.json"), "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                report[dir_name] = data
+            except Exception as e:
+                print(f"[!] Error reading {dir_name}/results.json: {e}")
+
+        if dir_name.lower() == "gobuster":
+            gobuster_data = {}
+            for fname in ["directories_results.txt", "subdomains_results.txt"]:
+                if fname in files:
+                    path = os.path.join(root, fname)
+                    try:
+                        with open(path, "r", encoding="utf-8") as f:
+                            gobuster_data[fname] = f.read().splitlines()
+                    except Exception as e:
+                        print(f"[!] Error reading {path}: {e}")
+            if gobuster_data:
+                report[dir_name] = gobuster_data
+
+        if dir_name.lower() == "whatweb":
+            whatweb_results = []
+            for file in files:
+                path = os.path.join(root, file)
+                try:
+                    with open(path, "r", encoding="utf-8") as f:
+                        whatweb_results.extend([line.strip() for line in f if line.strip()])
+                except Exception as e:
+                    print(f"[!] Error reading {path}: {e}")
+            if whatweb_results:
+                report[dir_name] = whatweb_results
+
+    output_path = os.path.join(base_dir, "general-report.json")
+    try:
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(report, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"[!] Error generating general report: {e}")
+
+    print("[*] Report saved to /home/alex/Study/SRW/sanner/results/report.json")

@@ -155,6 +155,7 @@ def main():
     finally:
         scanners["zap"].scan(target["url"].replace('localhost', '127.0.0.1'))
 
+        print("[*] Starting searching for vulnerabilities in query params with sqlmap and tplmap")
         queried_uris: set = utils.find_queried_uris(f"../results/zap/{target['host'].replace('localhost', '127.0.0.1')}-results.json")
         for uri in queried_uris:
             scanners["sqlmap"].scan(uri.replace('localhost', '127.0.0.1'))

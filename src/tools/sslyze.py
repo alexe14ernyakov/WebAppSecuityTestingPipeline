@@ -14,7 +14,10 @@ class SslyzeScanner(Tool):
 
         self.run_container(
             command=(
-                f"--regular {target} "
+                f"--regular "
                 f"--json_out /results/results.json"
+                f"--certinfo --tlsv1_2 --tlsv1_3 "
+                f"--http_headers --compression "
+                f"{target} "
             )
         )
