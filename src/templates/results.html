@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Scan Results</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        h1 { color: #333; }
+        .file-list { margin-top: 20px; }
+        .file-item { 
+            padding: 10px; 
+            margin-bottom: 5px; 
+            background: #f5f5f5; 
+            border-radius: 4px; 
+            display: flex; 
+            justify-content: space-between;
+        }
+        .file-name { font-weight: bold; }
+        .file-type { 
+            padding: 2px 6px; 
+            background: #ddd; 
+            border-radius: 3px; 
+            font-size: 0.8em; 
+        }
+        .file-size { color: #666; font-size: 0.9em; }
+        .back-link { display: block; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Available Scan Results</h1>
+    
+    <div class="file-list">
+        {% if files %}
+            {% for file in files %}
+            <div class="file-item">
+                <div>
+                    <a href="/results/{{ file.path }}" target="_blank" class="file-name">
+                        {{ file.name }}
+                    </a>
+                    <span class="file-type">{{ file.type|upper }}</span>
+                </div>
+                <span class="file-size">{{ (file.size/1024)|round(2) }} KB</span>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p>No scan results found.</p>
+        {% endif %}
+    </div>
+    
+    <a href="/" class="back-link">← Back to Scanner</a>
+</body>
+</html>

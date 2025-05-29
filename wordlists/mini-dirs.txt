@@ -4,3 +4,4 @@ catalog
 a
 b
 c
+video

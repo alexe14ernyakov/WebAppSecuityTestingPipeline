@@ -1,185 +1,66 @@
-import argparse
-import os
-import sys
-import time
+from flask import Flask, render_template, request, jsonify, send_from_directory
+import threading
+from pathlib import Path
+from scan import scan
 
-from tools.cmsscan import CMSscanTool
-from tools.gobuster import GoBusterScanner
-from tools.nikto import NiktoScanner
-from tools.sqlmap import SQLmapScanner
-from tools.sslyze import SslyzeScanner
-from tools.tplmap import TplmapScanner
-from tools.whatweb import WhatWebScanner
-from tools.zap import OwaspZapScanner
+app = Flask(__name__)
 
-import utils
+BASE_DIR = Path(__file__).parent.parent
+RESULTS_DIR = BASE_DIR / 'results'
 
+RESULTS_DIR.mkdir(exist_ok=True)
+ALLOWED_EXTENSIONS = {'json', 'txt', 'log', 'xml'} 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description='Automated web-application security testing pipleline', 
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-    parser.add_argument(
-        '-t', '--target',
-        help='Address of the target web-application',
-        required=True,
-        dest='addr', type=str
-    )
-    parser.add_argument(
-        '-p', '--port',
-        help='Port of the testing web-application',
-        required=False,
-        dest='port', type=int
-    )
-    https_group = parser.add_mutually_exclusive_group()
-    https_group.add_argument(
-        '--http',
-        action='store_false', 
-        help='Use HTTP in testing process',
-        dest='tls'
-    )
-    https_group.add_argument(
-        '--https', 
-        action='store_true', 
-        help='Use HTTPS in testing process',
-        dest='tls'
-    )
-    parser.add_argument(
-        '--whatweb-aggression',
-        help='''Aggression levels are:
-                1. Stealthy     Makes one HTTP request per target. Also follows redirects.\n
-                3. Aggressive   If a level 1 plugin is matched, additional requests will be made.\n
-                4. Heavy        Makes a lot of HTTP requests per target. Aggressive tests from''',
-        required=False,
-        dest='wwagr', type= int,
-        default=3
-    )
-    parser.add_argument(
-        '--subdomains-wordlist',
-        help='Path to the subdomains wordlist',
-        required=False,
-        dest='subdomswordlist', type= str,
-        default=os.path.join(os.path.dirname(__file__), "../wordlists/subdomain-list.txt")
-    )
-    parser.add_argument(
-        '--directories-wordlist',
-        help='Path to the directories wordlist',
-        required=False,
-        dest='dirswordlist', type= str,
-        default=os.path.join(os.path.dirname(__file__), "../wordlists/directory-list.txt")
-    )
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-    return parser.parse_args()
+@app.route('/start_scan', methods=['POST'])
+def start_scan():
+    url = request.form.get('url')
+    if not url:
+        return jsonify({"error": "URL is required"}), 400
+    
+    threading.Thread(
+        target=scan,
+        args=(url, RESULTS_DIR),
+        daemon=True
+    ).start()
+    
+    return jsonify({"status": "scan_started", "url": url})
 
+@app.route('/results')
+def show_results():
+    print(f"Looking for files in: {RESULTS_DIR}") 
+    
+    result_files = []
+    for file_path in RESULTS_DIR.rglob('*'):
+        if file_path.is_file() and file_path.suffix[1:].lower() in ALLOWED_EXTENSIONS:
+            rel_path = str(file_path.relative_to(RESULTS_DIR))
+            result_files.append({
+                "name": file_path.name,
+                "path": rel_path,
+                "size": file_path.stat().st_size,
+                "type": file_path.suffix[1:].lower()
+            })
+            print(f"Found file: {rel_path}")
+    
+    if not result_files:
+        print("No result files found!")
+    
+    return render_template('results.html', files=result_files)
 
-def main():
-    args: argparse.Namespace = parse_args()
+@app.route('/results/<path:filename>')
+def get_result(filename):
+    file_ext = Path(filename).suffix[1:].lower()
+    mimetype = {
+        'json': 'application/json',
+        'txt': 'text/plain',
+        'log': 'text/plain',
+        'xml': 'application/xml'
+    }.get(file_ext, 'application/octet-stream')
+    
+    return send_from_directory(RESULTS_DIR, filename, mimetype=mimetype)
 
-    target: dict = utils.normalize_target(args.addr, args.port, args.tls)
-
-    if utils.check_accessibility(target['url']):
-        print(f"[*] Starting scanning target on {target['url']}")
-    else:
-        print("[!] Error: could not connect to the target")
-        sys.exit(1)
-
-    scanners: dict = {
-        "whatweb": WhatWebScanner(),
-        "cmsscan": CMSscanTool(),
-        "nikto": NiktoScanner(),
-        "gobuster": GoBusterScanner(),
-        "zap": OwaspZapScanner(),
-        "sqlmap": SQLmapScanner(),
-        "tplmap": TplmapScanner(),
-        "sslyze": SslyzeScanner()
-    }
-
-    '''================================================================================================================================
-    |||                                                WHATWEB SCANING                                                              |||
-    ================================================================================================================================'''
-    start: float = time.time()
-    scanners["whatweb"].scan(target["url"].replace('localhost', '127.0.0.1'), args.wwagr)
-    print(f"[*] Process took {time.time() - start:.3f} seconds")
-
-
-    '''================================================================================================================================
-    |||                                                CMSSCAN SCANING                                                              |||
-    ================================================================================================================================'''
-    if utils.check_cms_support(f"../results/whatweb/results.json"):
-        start: float = time.time()
-        scanners["cmsscan"].scan(target["url"].replace('localhost', '127.0.0.1'))
-        print(f"[*] Process took {time.time() - start:.3f} seconds")
-    else:
-        print("[*] CMSscan skipped. No supported CMS detected.")
-
-
-    '''================================================================================================================================
-    |||                                                NIKTO SCANING                                                                |||
-    ================================================================================================================================'''
-    start: float = time.time()
-    scanners["nikto"].scan(target["url"].replace('localhost', '127.0.0.1'))
-    print(f"[*] Process took {time.time() - start:.3f} seconds")
-
-
-    '''================================================================================================================================
-    |||                                          GOBUSTER SUBDOMAIN SEARCH                                                          |||
-    ================================================================================================================================'''
-    start: float = time.time()
-    scanners["gobuster"].scan_subdomains(target["host"].replace('localhost', '127.0.0.1'), args.subdomswordlist)
-    print(f"[*] Process took {time.time() - start:.3f} seconds")
-
-
-    '''================================================================================================================================
-    |||                                          GOBUSTER DIRECTORIES SEARCH                                                        |||
-    ================================================================================================================================'''
-    start: float = time.time()
-    scanners["gobuster"].scan_directories(target["url"].replace('localhost', '127.0.0.1'), args.dirswordlist)
-    print(f"[*] Process took {time.time() - start:.3f} seconds")
-
-
-    '''================================================================================================================================
-    |||                                           OWASP ZAP DAST + TPL/SQL MAP                                                      |||
-    ================================================================================================================================'''
-    start: float = time.time()
-    try:
-        with open("../results/gobuster/subdomains_results.txt", "r") as f:
-            subdomains = f.readlines()
-
-        if len(subdomains):
-            for subdomain in subdomains:
-                scanners["zap"].scan(subdomain.strip())
-
-    except FileNotFoundError:
-        print("[*] Subdomains results file not found. Scan only given target with OWASP ZAP.")
-    finally:
-        scanners["zap"].scan(target["url"].replace('localhost', '127.0.0.1'))
-
-        print("[*] Starting searching for vulnerabilities in query params with sqlmap and tplmap")
-        queried_uris: set = utils.find_queried_uris(f"../results/zap/{target['host'].replace('localhost', '127.0.0.1')}-results.json")
-        for uri in queried_uris:
-            scanners["sqlmap"].scan(uri.replace('localhost', '127.0.0.1'))
-            scanners["tplmap"].scan(uri.replace('localhost', '127.0.0.1'))
-    print(f"[*] Process took {time.time() - start:.3f} seconds")
-
-
-    '''================================================================================================================================
-    |||                                                    SSLYZE ANALYSIS                                                          |||
-    ================================================================================================================================'''
-    if target["scheme"] == "https":
-        start: float = time.time()
-        addr: str =f"{target['host'].replace('localhost', '127.0.0.1')}:{target['port']}"
-        scanners["sslyze"].scan(addr)
-        print(f"[*] Process took {time.time() - start:.3f} seconds")
-    else:
-        print("[*] Skipping sslyze scan. Target is not using HTTPS.")
-
-
-    '''================================================================================================================================
-    |||                                               GENERATING GENERAL REPORT                                                     |||
-    ================================================================================================================================'''
-    utils.generate_report()
-
-
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)

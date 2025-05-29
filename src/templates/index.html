@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Web Security Scanner</title>
+    <style>
+        #log-container {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-top: 20px;
+            font-family: monospace;
+            background: #f5f5f5;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>Web Security Scanner</h1>
+    
+    <form id="scan-form">
+        <input type="url" name="url" placeholder="https://example.com" required>
+        <button type="submit">Start Scan</button>
+    </form>
+    
+    <div id="log-container"></div>
+    
+    <p><a href="/results">View Scan History</a></p>
+
+    <script>
+        const form = document.getElementById('scan-form');
+        const logContainer = document.getElementById('log-container');
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            logContainer.innerHTML = '';
+            
+            const formData = new FormData(form);
+            const response = await fetch('/scan', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                logContainer.innerHTML = `<div class="log-entry" style="color:red">Error: ${error.error}</div>`;
+                return;
+            }
+            
+            const { scan_id, status_url } = await response.json();
+            const eventSource = new EventSource(status_url);
+            
+            eventSource.onmessage = (e) => {
+                if (e.data === 'SCAN_COMPLETED') {
+                    logContainer.innerHTML += '<div class="log-entry" style="color:green">Scan completed!</div>';
+                    eventSource.close();
+                    return;
+                }
+                
+                logContainer.innerHTML += `<div class="log-entry">${e.data}</div>`;
+                logContainer.scrollTop = logContainer.scrollHeight;
+            };
+            
+            eventSource.onerror = () => {
+                eventSource.close();
+            };
+        });
+    </script>
+</body>
+</html>

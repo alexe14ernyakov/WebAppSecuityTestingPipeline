@@ -2,3 +2,9 @@ edu
 main
 www
 start
+mail
+pop
+smtp
+ns1
+ftp
+mx
