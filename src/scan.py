@@ -1,5 +1,4 @@
 import argparse
-import os
 import sys
 import time
 
@@ -15,68 +14,74 @@ from tools.zap import OwaspZapScanner
 import utils
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description='Automated web-application security testing pipleline', 
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-    parser.add_argument(
-        '-t', '--target',
-        help='Address of the target web-application',
-        required=True,
-        dest='addr', type=str
-    )
-    parser.add_argument(
-        '-p', '--port',
-        help='Port of the testing web-application',
-        required=False,
-        dest='port', type=int
-    )
-    https_group = parser.add_mutually_exclusive_group()
-    https_group.add_argument(
-        '--http',
-        action='store_false', 
-        help='Use HTTP in testing process',
-        dest='tls'
-    )
-    https_group.add_argument(
-        '--https', 
-        action='store_true', 
-        help='Use HTTPS in testing process',
-        dest='tls'
-    )
-    parser.add_argument(
-        '--whatweb-aggression',
-        help='''Aggression levels are:
-                1. Stealthy     Makes one HTTP request per target. Also follows redirects.\n
-                3. Aggressive   If a level 1 plugin is matched, additional requests will be made.\n
-                4. Heavy        Makes a lot of HTTP requests per target. Aggressive tests from''',
-        required=False,
-        dest='wwagr', type= int,
-        default=3
-    )
-    parser.add_argument(
-        '--subdomains-wordlist',
-        help='Path to the subdomains wordlist',
-        required=False,
-        dest='subdomswordlist', type= str,
-        default=os.path.join(os.path.dirname(__file__), "../wordlists/subdomain-list.txt")
-    )
-    parser.add_argument(
-        '--directories-wordlist',
-        help='Path to the directories wordlist',
-        required=False,
-        dest='dirswordlist', type= str,
-        default=os.path.join(os.path.dirname(__file__), "../wordlists/directory-list.txt")
-    )
+# def parse_args() -> argparse.Namespace:
+#     parser = argparse.ArgumentParser(
+#         description='Automated web-application security testing pipleline', 
+#         formatter_class=argparse.ArgumentDefaultsHelpFormatter
+#     )
+#     parser.add_argument(
+#         '-t', '--target',
+#         help='Address of the target web-application',
+#         required=True,
+#         dest='addr', type=str
+#     )
+#     parser.add_argument(
+#         '-p', '--port',
+#         help='Port of the testing web-application',
+#         required=False,
+#         dest='port', type=int
+#     )
+#     https_group = parser.add_mutually_exclusive_group()
+#     https_group.add_argument(
+#         '--http',
+#         action='store_false', 
+#         help='Use HTTP in testing process',
+#         dest='tls'
+#     )
+#     https_group.add_argument(
+#         '--https', 
+#         action='store_true', 
+#         help='Use HTTPS in testing process',
+#         dest='tls'
+#     )
+#     parser.add_argument(
+#         '--whatweb-aggression',
+#         help='''Aggression levels are:
+#                 1. Stealthy     Makes one HTTP request per target. Also follows redirects.\n
+#                 3. Aggressive   If a level 1 plugin is matched, additional requests will be made.\n
+#                 4. Heavy        Makes a lot of HTTP requests per target. Aggressive tests from''',
+#         required=False,
+#         dest='wwagr', type= int,
+#         default=3
+#     )
+#     parser.add_argument(
+#         '--subdomains-wordlist',
+#         help='Path to the subdomains wordlist',
+#         required=False,
+#         dest='subdomswordlist', type= str,
+#         default=os.path.join(os.path.dirname(__file__), "../wordlists/subdomain-list.txt")
+#     )
+#     parser.add_argument(
+#         '--directories-wordlist',
+#         help='Path to the directories wordlist',
+#         required=False,
+#         dest='dirswordlist', type= str,
+#         default=os.path.join(os.path.dirname(__file__), "../wordlists/directory-list.txt")
+#     )
 
-    return parser.parse_args()
+#     return parser.parse_args()
 
 
-def scan():
-    args: argparse.Namespace = parse_args()
+def scan(
+    addr: str,
+    port: int = None,
+    tls: bool = False,
+    wwagr: int = 3,
+    subdomswordlist: str = "../wordlists/subdomain-list.txt",
+    dirswordlist: str = "../wordlists/directory-list.txt"
+):
 
-    target: dict = utils.normalize_target(args.addr, args.port, args.tls)
+    target: dict = utils.normalize_target(addr, port, tls)
 
     if utils.check_accessibility(target['url']):
         print(f"[*] Starting scanning target on {target['url']}")
@@ -99,7 +104,7 @@ def scan():
     |||                                                WHATWEB SCANING                                                              |||
     ================================================================================================================================'''
     start: float = time.time()
-    scanners["whatweb"].scan(target["url"].replace('localhost', '127.0.0.1'), args.wwagr)
+    scanners["whatweb"].scan(target["url"].replace('localhost', '127.0.0.1'), wwagr)
     print(f"[*] Process took {time.time() - start:.3f} seconds")
 
 
@@ -126,7 +131,7 @@ def scan():
     |||                                          GOBUSTER SUBDOMAIN SEARCH                                                          |||
     ================================================================================================================================'''
     start: float = time.time()
-    #scanners["gobuster"].scan_subdomains(target["host"].replace('localhost', '127.0.0.1'), args.subdomswordlist)
+    scanners["gobuster"].scan_subdomains(target["host"].replace('localhost', '127.0.0.1'), subdomswordlist)
     print(f"[*] Process took {time.time() - start:.3f} seconds")
 
 
@@ -134,7 +139,7 @@ def scan():
     |||                                          GOBUSTER DIRECTORIES SEARCH                                                        |||
     ================================================================================================================================'''
     start: float = time.time()
-    scanners["gobuster"].scan_directories(target["url"].replace('localhost', '127.0.0.1'), args.dirswordlist)
+    scanners["gobuster"].scan_directories(target["url"].replace('localhost', '127.0.0.1'), dirswordlist)
     print(f"[*] Process took {time.time() - start:.3f} seconds")
 
 

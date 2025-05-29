@@ -18,16 +18,31 @@ def index():
 @app.route('/start_scan', methods=['POST'])
 def start_scan():
     url = request.form.get('url')
+    port = request.form.get('port', type=int)
+    use_https = request.form.get('https') == 'true'
+    wwagr = request.form.get('wwagr', type=int, default=3)
+    
+    subdomswordlist = request.form.get('subdomswordlist') or '../wordlists/subdomain-list.txt'
+    dirswordlist = request.form.get('dirswordlist') or '../wordlists/directory-list.txt'
+
     if not url:
         return jsonify({"error": "URL is required"}), 400
-    
+
     threading.Thread(
         target=scan,
-        args=(url, RESULTS_DIR),
+        args=(url,),
+        kwargs={
+            'port': port,
+            'tls': use_https,
+            'wwagr': wwagr,
+            'subdomswordlist': subdomswordlist,
+            'dirswordlist': dirswordlist
+        },
         daemon=True
     ).start()
-    
+
     return jsonify({"status": "scan_started", "url": url})
+
 
 @app.route('/results')
 def show_results():
