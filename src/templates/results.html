@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Scan Results</title>
+    <title>Результаты сканирований</title>
     <style>
         body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
         h1 { color: #333; }
@@ -26,7 +26,7 @@
     </style>
 </head>
 <body>
-    <h1>Available Scan Results</h1>
+    <h1>Доступные отчёты о сканировании</h1>
     
     <div class="file-list">
         {% if files %}
@@ -42,10 +42,10 @@
             </div>
             {% endfor %}
         {% else %}
-            <p>No scan results found.</p>
+            <p>Отчётов сканирования не найдено.</p>
         {% endif %}
     </div>
     
-    <a href="/" class="back-link">← Back to Scanner</a>
+    <a href="/" class="back-link">← На главную</a>
 </body>
 </html>

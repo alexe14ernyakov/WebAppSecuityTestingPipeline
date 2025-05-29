@@ -2,9 +2,9 @@ import json
 import os
 import re
 import sys
+from typing import Optional
 
 import requests
-
 
 SUPPORTED_CMS = [
     "WordPress",
@@ -18,39 +18,44 @@ SUPPORTED_CMS = [
 ]
 
 
-def normalize_target(address: str, port: int | None, tls: bool | None) -> dict:
-    schema_pattern: re.Pattern = re.compile(r'^(http[s]?)://')
-    match_schema: re.Match | None = schema_pattern.match(address)
+def normalize_target(address: str, port: Optional[int], tls: Optional[bool]) -> dict:
+    schema_pattern = re.compile(r'^(http[s]?)://')
+    match_schema = schema_pattern.match(address)
 
     if match_schema:
         if tls is None:
-            scheme: str = match_schema.group(1)
+            scheme = match_schema.group(1)
         else:
             if match_schema.group(1) == 'https' and tls:
-                scheme: str = match_schema.group(1)          
+                scheme = match_schema.group(1)
             elif match_schema.group(1) == 'http' and not tls:
-                scheme: str = match_schema.group(1)
+                scheme = match_schema.group(1)
             else:
                 print("[!] Error: incompatible protocol in address and --http(s) flag.")
                 sys.exit(1)
-        address = address[len(scheme)+3:]
+        address = address[len(scheme) + 3:]
     else:
-        if tls is None or tls:
-            scheme: str = "https"
-        else:
-            scheme: str = "http"
+        scheme = "https" if tls is None or tls else "http"
 
     if ":" in address:
-        parts: list = address.split(':')
-
+        parts = address.split(':')
         if len(parts) != 2:
             print("[!] Error: incorrect target format. Expected: [http(s)://]target.domain[:port]")
             sys.exit(1)
-        else:
-            if int(port) != int(parts[1]):
-                print("[!] Error: incompatible port in address and --port flag.")
-                sys.exit(1)
-            address = address[:len(address)-len(port)]
+
+        try:
+            embedded_port = int(parts[1])
+        except ValueError:
+            print("[!] Error: port must be an integer.")
+            sys.exit(1)
+
+        if port is None:
+            port = embedded_port
+        elif port != embedded_port:
+            print("[!] Error: incompatible port in address and --port flag.")
+            sys.exit(1)
+
+        address = parts[0]
     else:
         if port is None:
             port = 443
@@ -65,27 +70,24 @@ def normalize_target(address: str, port: int | None, tls: bool | None) -> dict:
 
 def check_accessibility(url: str) -> bool:
     try:
-        _ = requests.get(url, timeout=10)
+        requests.get(url, timeout=10)
         return True
     except requests.RequestException:
         return False
-    
+
 
 def check_cms_support(whatweb_report: str) -> bool:
     try:
         with open(whatweb_report, "r", encoding="utf-8") as file:
             content = file.read().lower()
-        for cms in SUPPORTED_CMS:
-            if cms.lower() in content:
-                return True
-        return False
+        return any(cms.lower() in content for cms in SUPPORTED_CMS)
     except Exception as e:
         print(f"[!] Error searching for CMS in WhatWeb report: {e}")
         return False
-    
 
-def find_queried_uris(zap_report: str) -> set:
-    with open(zap_report, encoding='utf-8') as f:
+
+def find_queried_uris(zap_report: str) -> list[str]:
+    with open(zap_report, encoding="utf-8") as f:
         data = json.load(f)
 
     uris = set()
@@ -101,7 +103,7 @@ def find_queried_uris(zap_report: str) -> set:
 
 
 def generate_report() -> None:
-    print("[*] Generating general report for analized target")
+    print("[*] Generating general report for analyzed target")
 
     base_dir = "../results"
     report = {}
@@ -139,7 +141,9 @@ def generate_report() -> None:
                 path = os.path.join(root, file)
                 try:
                     with open(path, "r", encoding="utf-8") as f:
-                        whatweb_results.extend([line.strip() for line in f if line.strip()])
+                        whatweb_results.extend(
+                            [line.strip() for line in f if line.strip()]
+                        )
                 except Exception as e:
                     print(f"[!] Error reading {path}: {e}")
             if whatweb_results:
@@ -151,5 +155,6 @@ def generate_report() -> None:
             json.dump(report, f, indent=2, ensure_ascii=False)
     except Exception as e:
         print(f"[!] Error generating general report: {e}")
+        return
 
-    print("[*] Report saved to /home/alex/Study/SRW/sanner/results/report.json")
+    print(f"[*] Report saved to {output_path}")

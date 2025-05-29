@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Web Security Scanner</title>
+    <title>Приложение для анализа защищённости веб-приложения</title>
     <style>
         body {
             font-family: "Segoe UI", sans-serif;
@@ -94,31 +94,31 @@
 </head>
 <body>
 
-    <h1>Web Security Scanner</h1>
+    <h1>Приложение для анализа защищённости веб-приложения</h1>
 
     <form id="scanForm">
-        <label for="url">Target URL:</label>
+        <label for="url">URL целевого веб-приложения:</label>
         <input type="text" name="url" placeholder="https://example.com" required>
 
         <label>
-            <input type="checkbox" name="https" value="true"> Use HTTPS
+            <input type="checkbox" name="https" value="true"> использовать HTTPS
         </label>
 
-        <label for="wwagr">Aggression Level:</label>
+        <label for="wwagr">Уровень агрессии (для WhatWeb)</label>
         <select name="wwagr">
             <option value="1">Stealthy</option>
             <option value="3" selected>Aggressive</option>
             <option value="4">Heavy</option>
         </select>
 
-        <label for="port">Port (optional):</label>
-        <input type="number" name="port" placeholder="e.g., 443">
+        <label for="port">Порт (опционально):</label>
+        <input type="number" name="port" placeholder="443">
 
-        <button type="submit">Start Scan</button>
+        <button type="submit">Начать анализ защищённости</button>
     </form>
 
     <div class="link-center">
-        <p><a href="/results">View Scan History</a></p>
+        <p><a href="/results">Результаты сканирований</a></p>
     </div>
 
     <div id="log-container"></div>

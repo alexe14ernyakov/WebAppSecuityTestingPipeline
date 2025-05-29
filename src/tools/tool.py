@@ -57,7 +57,7 @@ class Tool:
                 volumes=volumes
             )
 
-            print(f"[+] Scan with {self.image} completed. Results saved to {self.results_path}")
+            print(f"[+] Scan with {self.image} completed. Results saved to results directory.")
         except docker.errors.ContainerError as e:
             print(f"[!] Container {self.image} execution failed: {e}")
         except Exception as e:
