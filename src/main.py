@@ -1,15 +1,30 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, Response, render_template, request, jsonify, send_from_directory
 import threading
+import queue
 from pathlib import Path
 from scan import scan
+from log import StreamToQueue
 
 app = Flask(__name__)
+
+log_queue = queue.Queue()
 
 BASE_DIR = Path(__file__).parent.parent
 RESULTS_DIR = BASE_DIR / 'results'
 
 RESULTS_DIR.mkdir(exist_ok=True)
-ALLOWED_EXTENSIONS = {'json', 'txt', 'log', 'xml'} 
+ALLOWED_EXTENSIONS = {'json', 'txt', 'log', 'xml'}
+
+
+def log_writer(message: str):
+    log_queue.put(message)
+
+
+def event_stream():
+    while True:
+        msg = log_queue.get()
+        yield f"data: {msg}\n\n"
+
 
 @app.route('/')
 def index():
@@ -28,20 +43,21 @@ def start_scan():
     if not url:
         return jsonify({"error": "URL is required"}), 400
 
-    threading.Thread(
-        target=scan,
-        args=(url,),
-        kwargs={
-            'port': port,
-            'tls': use_https,
-            'wwagr': wwagr,
-            'subdomswordlist': subdomswordlist,
-            'dirswordlist': dirswordlist
-        },
-        daemon=True
-    ).start()
+    def run_scan_with_redirect():
+        from contextlib import redirect_stdout
+        with redirect_stdout(StreamToQueue(log_queue)):
+            scan(
+                url,
+                port=port,
+                tls=use_https,
+                wwagr=wwagr,
+                subdomswordlist=subdomswordlist,
+                dirswordlist=dirswordlist
+            )
 
-    return jsonify({"status": "scan_started", "url": url})
+    threading.Thread(target=run_scan_with_redirect, daemon=True).start()
+
+    return jsonify({"status": "scan_started", "url": url, "status_url": "/stream_logs"})
 
 
 @app.route('/results')
@@ -77,5 +93,14 @@ def get_result(filename):
     
     return send_from_directory(RESULTS_DIR, filename, mimetype=mimetype)
 
+@app.route('/stream_logs')
+def stream_logs():
+    def event_stream():
+        while True:
+            msg = log_queue.get()
+            yield f"data: {msg}\n\n"
+    return Response(event_stream(), mimetype='text/event-stream')
+
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=8080, debug=False)
