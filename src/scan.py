@@ -124,7 +124,4 @@ def scan(
     else:
         print("[*] Skipping sslyze scan. Target is not using HTTPS.")
 
-    # ========================================================================
-    #                          GENERAL REPORT GENERATION
-    # ========================================================================
     utils.generate_report()
